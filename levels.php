@@ -1,4 +1,7 @@
 <?php
+/**
+*	level => cards
+*/
 
 self::$cardTypes = [
 	"common",

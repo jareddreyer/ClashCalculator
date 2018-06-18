@@ -12,24 +12,39 @@ class cardLevelCalculator
 		include_once "levels.php"; //get card levels		
 	}
 	
-	public static function cardLevel ($cardType, $cards) 
+	public static function cardLevel ($cardType, $cards, $cardTypeLevels) 
 	{	
-	
-		//$cardCountKey = array_search($cards, $$arrCardType); //not used yet
-		$arrayCardLevels = self::cardTypeArrays($cardType, $cards);
+		/**
+		* Definition of variables
+		* =========================================
+		* @var <array> self::$$arrayCardLevels - list of card type levels and card values 	
+		* @param $cardType <string> = type of card, e.g. rare, common, etc
+		* @param $cardTypeLevels <string> = level of your card currently.
+		* @param $cards = current amount of cards you have.
+		* @return <string> - level
+		*
+		*/
 
-		foreach (self::$$arrayCardLevels as $key => $val)
-		{
-			if (($val - $cards) <= 0) $cardArrTmp = array($key=>$val); 
-		}
+		$arrayCardLevels = self::cardTypeArrays($cardType, $cards);		
+		self::$$arrayCardLevels = array_slice(self::$$arrayCardLevels, $cardTypeLevels-1, null, true); //start from specific card level.
 		
-		end($cardArrTmp);
-		$newCardLevel = key($cardArrTmp);
+		foreach (self::$$arrayCardLevels as $key => $val)
+		{	
+			$cards = $cards - $val;
+			
+			if($cards >= 0)
+			{
+				$cardArrTmp = array($key=>$cards);		
+			} else {
+				break;
+			}
+
+		}
 				
-		return $newCardLevel;
+		return $cardArrTmp;
 		
 	}
-	
+
 	/**
 	* returns back the keys (levels) of selected card type
 	* @param $cardType <string>
@@ -77,8 +92,13 @@ if(isset( $_POST['cardType'] ) && !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && s
 	foreach ($cards::$$cardTypeLevels as $key => $value) {
 		echo '<option value="'.$key.'">Level '.$key . '</option>';
 	}
+} else {
+	$newCardLevel =  $cards::cardLevel($_POST['cardType'], $_POST['cardCount'], $_POST['cardTypeLevels']);
+	$key = key($newCardLevel);
+	echo "level ". $key . ", \n";
+	echo $newCardLevel[$key] . " cards left over ";
 }
 
-//echo $cards::cardLevel($_POST['cardType'], $_POST['cardCount']);
+
   
 
