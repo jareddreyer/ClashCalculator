@@ -3,101 +3,127 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
+/**
+ * Clash royale card level calculator
+ * ===================================
+ * user must input number of cards, type of card, 
+ * and what level it currently is at.
+ * 
+ */
 class cardLevelCalculator 
 {
-	public static $common, $rare, $epic, $legendary, $cardTypes;
+	public static $cardTypesLevels;
 
 	public function __construct()
 	{
-		include_once "levels.php"; //get card levels		
+		include_once "levels.php"; //include file holding all card levels		
 	}
-	
-	public static function cardLevel ($cardType, $cards, $cardTypeLevels) 
-	{	
-		/**
-		* Definition of variables
-		* =========================================
-		* @var <array> self::$$arrayCardLevels - list of card type levels and card values 	
-		* @param $cardType <string> = type of card, e.g. rare, common, etc
-		* @param $cardTypeLevels <string> = level of your card currently.
-		* @param $cards = current amount of cards you have.
-		* @return <string> - level
-		*
-		*/
 
-		$arrayCardLevels = self::cardTypeArrays($cardType, $cards);		
-		self::$$arrayCardLevels = array_slice(self::$$arrayCardLevels, $cardTypeLevels-1, null, true); //start from specific card level.
+	/**
+	 * main calculation method
+	 * =========================================
+	 * @param [array] self::$$arrayCardLevels - list of card type levels and card values 	
+	 * @param [string] $cardType = type of card, e.g. rare, common, etc
+	 * @param [string] $cardTypeLevels = level of your card currently.
+	 * @param [string] $cards = current amount of cards you have.
+	 * 
+	 * @return [array] - level and remaining cards left over
+	 *
+	 */
+	public static function cardLevel ($cardType, $cards, $cardTypeLevel) 
+	{
+		//var_dump('card details: '. $cardType . '/ ' . $cards. '/ ' . $cardTypeLevel);
 		
-		foreach (self::$$arrayCardLevels as $key => $val)
-		{	
-			$cards = $cards - $val;
+		$arrayCardLevels = self::cardTypeLevels($cardType);		
 			
-			if($cards >= 0)
-			{
-				$cardArrTmp = array($key=>$cards);		
-			} else {
-				break;
-			}
+			$cloneArray = $arrayCardLevels;
 
-		}
+			foreach($arrayCardLevels as $key => $value)
+			{
+				if($key == $cardTypeLevel)
+			    	break;
+
+				unset($cloneArray[$key]);
+			} 
+//var_dump($cloneArray);
+$removed = self::array_shift_associative($cloneArray);
+var_dump($removed);
+	
+
 				
-		return $cardArrTmp;
+//var_dump($cloneArray);
+				foreach ($cloneArray as $key => $val)
+				{	
+					$cards = $cards - $val;
+						
+					if($cards >= 0)
+					{
+						return [$key=>$cards];
+							
+					} else {
+						break;
+					}
+
+				}	
+
+			
+			
+			
+		
 		
 	}
 
 	/**
-	* returns back the keys (levels) of selected card type
-	* @param $cardType <string>
-	*
-	*/
-	public static function getCardTypeLevels ($cardType)
-	{
-		$cardTypeLevels = self::cardTypeArrays($cardType);
-
-		return $cardTypeLevels;
-		
+	 * returns shift array with keys preserved
+	 * @param array $arr array variable name
+	 * @return array
+	 */
+	public static function array_shift_associative(&$arr){
+	    reset($arr);
+	    $return = array(key($arr)=>current($arr));
+	    unset($arr[key($arr)]);
+	    return $return; 
 	}
 
-	public static function cardTypeArrays ($cardType) {
-		/*
-		 * Definition of variables
-		 * =========================================
-		 * $cardType = type of card, e.g. rare, common, etc
-		 * $cardlevel = level of your card currently.
-		 * $cards = current amount of cards you have.
-		 * $cardlevelCount = how many cards you need to upgrade
-		*/
-
+	/**
+	 * returns back the keys (levels) of selected card type
+	 * @param string
+	 * @return array
+	 */
+	public static function cardTypeLevels ($cardType) 
+	{		
 		//get array by values		
-		$cardTypeKey = array_search($cardType, self::$cardTypes);
-		
-		$variableArrayName = 'cardTypes['.$cardTypeKey.']';
-
+		$variableArrayName = 'cardTypesLevels['.$cardType.']';
 		$arrayName  = substr($variableArrayName,0,strpos($variableArrayName,'['));
-		$arrayIndex = preg_replace('/[^\d\s]/', '',$variableArrayName);
-				
-		$arrCardLevels = self::${$arrayName}[$arrayIndex];
+		$arrCardLevels = self::${$arrayName}[$cardType];
 
 		return $arrCardLevels;
 	}
+
 }
 
+//main object call
 $cards = new cardLevelCalculator();
 
-if(isset( $_POST['cardType'] ) && !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') 
+//check if ajax request
+if(!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') 
 {
+	//check if calling for card type levels
+	if(isset( $_POST['cardType'] ) && isset( $_POST['cardCount'] ) == null && isset( $_POST['cardTypeLevels'] ) == null ) {
 
-	$cardTypeLevels = $cards::getCardTypeLevels($_POST['cardType']);
+		foreach ($cards::cardTypeLevels($_POST['cardType']) as $key => $value) {
+			if($key != 13)
+			 echo '<option value="'.$key.'">Level '.$key . '</option>';
+		}
 
-	foreach ($cards::$$cardTypeLevels as $key => $value) {
-		echo '<option value="'.$key.'">Level '.$key . '</option>';
-	}
-} else {
-	$newCardLevel =  $cards::cardLevel($_POST['cardType'], $_POST['cardCount'], $_POST['cardTypeLevels']);
-	$key = key($newCardLevel);
-	echo "level ". $key . ", \n";
-	echo $newCardLevel[$key] . " cards left over ";
-}
+	} else {
+		//else this is a ajax request and make the calculation!
+		$newCardLevel = $cards::cardLevel($_POST['cardType'], $_POST['cardCount'], $_POST['cardTypeLevels']);
+		$key = key($newCardLevel);
+		echo "level ". $key . ", ";
+		echo $newCardLevel[$key] . " cards left over ";
+	}	
+} 
 
 
   

@@ -41,7 +41,7 @@
 
         <div class="row">
             <div class="col-lg-6 col-md-offset-3">
-	    		<form action="calculator.php" method="post">
+	    		<form class="submit" method="post">
 					<div id="contact-form" class="form-container" data-form-container style="color: rgb(46, 125, 50); background: rgb(200, 230, 201);">
 						<div class="row">
 							<div class="form-title">
@@ -60,13 +60,17 @@
 								<div class="message-box">
 									<span class="input-status" data-toggle="tooltip" data-placement="top" title="Post Contents."> </span>
 										<div class="form-group">
-			  								<label for="cardType">Select list:</label>
+			  								<label for="cardType">Card quality:</label>
 										  	<select id="cardType" name="cardType" class="form-control" required>
 										  		<option value="" disabled selected>Please Choose...</option>
-												<option value="common">Common</option>
-												<option value="rare">Rare</option>
-												<option value="epic">Epic</option>
-												<option value="legendary">Legendary</option>
+										  		<?php 
+										  			include_once 'calculator.php'; 
+										  			$Calculator = new cardLevelCalculator();
+										  			foreach ($Calculator::$cardTypesLevels as $key => $value) {
+										  				echo '<option value="'.$key.'">'.$key.'</option>';
+										  			}
+										  		?>
+												
 											</select>
 										</div>
 										<div class="form-group">
@@ -75,7 +79,7 @@
 											</select>
 										</div>
 									<div class="row submit-row">
-										<input type="submit" class="btn btn-info btn btn-block submit-form valid" value="Submit Button">
+										<button class="btn btn-info btn btn-block submit-form valid">Calculate</button>
 										
 									</div>
 								</div>
